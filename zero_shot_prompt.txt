@@ -1,0 +1,28 @@
+/**
+ * Convert a string to snake_case.
+ *
+ * Examples:
+ *   toSnakeCase("Hello World")       -> "hello_world"
+ *   toSnakeCase("fooBarBaz")        -> "foo_bar_baz"
+ *   toSnakeCase("  __JSONData--42") -> "json_data_42"
+ *
+ * Returns empty string for null/undefined/empty input.
+ */
+function toSnakeCase(input) {
+    if (input == null) return '';
+    return String(input)
+        .trim()
+        // separate camelCase or lower-to-upper transitions: "fooBar" -> "foo_Bar"
+        .replace(/([a-z0-9])([A-Z])/g, '$1_$2')
+        // separate sequences like "JSONData" -> "JSON_Data"
+        .replace(/([A-Z]+)([A-Z][a-z0-9]+)/g, '$1_$2')
+        // replace any non-alphanumeric characters with underscores
+        .replace(/[^a-zA-Z0-9]+/g, '_')
+        // collapse multiple underscores
+        .replace(/_+/g, '_')
+        // trim leading/trailing underscores
+        .replace(/^_+|_+$/g, '')
+        .toLowerCase();
+}
+
+module.exports = toSnakeCase;
