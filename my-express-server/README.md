@@ -28,130 +28,136 @@ To get started with this project, follow the instructions below.
       ```
    - To run both at the same time, start each instance in a separate terminal with the appropriate PORT value.
 
-   Running with Docker
-   - Map the ports when running containers:
-      ```
-      # Anythink Market — Servers (Python & Node)
-
-      This folder contains the Node/Express server of the Anythink Market demo. The repository also includes the original Python server. Both servers expose the same simple API so you can run them side-by-side while migrating functionality from Python to Node.
-
-      Summary
-
-      - Python server: FastAPI + Uvicorn, listens on port 8000
-      - Node server: Express + Nodemon (development), listens on port 8001
-
-      Both servers implement the following contract:
-
-      - GET / -> "Hello World"
-      - GET /tasks -> { "tasks": [ ... ] }
-      - POST /tasks -> accepts { "text": "..." } and returns { "message": "Task added successfully" }
-
-      Quick tips
-
-      - Node development uses `yarn start` (nodemon) so code changes reload automatically.
-      - The `docker-compose.yml` at the repository root runs both services together and maps Python -> 8000, Node -> 8001.
-
-      Requirements
-
-      - Node.js (LTS recommended; repository used Node 14)
-      - Yarn (for Node scripts)
       - Python 3.9+ (if running the original Python server locally)
-      - Docker & Docker Compose (recommended for parity and reproducible environment)
-
-      Run locally — Node
-
-      1. Install dependencies
-
-      ```bash
-      cd my-express-server
       yarn install
       ```
-
-      2. Start the Node server (development — nodemon watches `src`)
-
-      ```bash
-      yarn start
-      ```
-
-      Visit: http://localhost:8001
-
-      Run locally — Python (optional)
-
-      1. Create and activate a virtual environment
-
-      ```bash
-      cd python-server
-      python3 -m venv .venv
-      source .venv/bin/activate
-      ```
-
-      2. Install dependencies and run uvicorn
-
-      ```bash
-      pip install -r requirements.txt
-      uvicorn src.main:app --reload --host 0.0.0.0 --port 8000
-      ```
-
-      Visit: http://localhost:8000
-
-      Run with Docker Compose (recommended)
-
-      From the repository root:
-
-      ```bash
-      docker compose up --build
-      ```
-
-      This builds both images and launches two containers:
-
-      - Python -> http://localhost:8000
       - Node -> http://localhost:8001
+   # Anythink Market — Node server (my-express-server)
 
-      Stop and remove containers:
+   This folder contains the Node.js/Express implementation used alongside the original Python server for migration and parity testing.
 
-      ```bash
-      docker compose down
-      ```
+   In short:
 
-      Endpoints and examples
+   - Python server: FastAPI + Uvicorn (port 8000)
+   - Node server: Express + Nodemon (dev) (port 8001)
 
-      - GET root (Node):
+   Both servers expose the same simple API so you can run them side-by-side while migrating functionality.
 
-      ```bash
-      curl http://localhost:8001/
-      # => Hello World
-      ```
+   ## Ports
 
-      - GET tasks:
+   - Python: 8000
+   - Node: 8001
 
-      ```bash
-      curl http://localhost:8001/tasks
-      # => { "tasks": [ ... ] }
-      ```
+   ## Node: explicit dependencies
 
-      - POST a task:
+   The Node server requires the following packages (declared in `package.json`):
 
-      ```bash
-      curl -X POST -H "Content-Type: application/json" -d '{"text":"New task"}' http://localhost:8001/tasks
-      # => { "message": "Task added successfully" }
-      ```
+   - `express` (runtime)
+   - `nodemon` (dev dependency used by `yarn start` for automatic reload)
 
-      Use port `8000` in the examples above to target the Python server instead.
+   Install locally if needed:
 
-      Troubleshooting
+   ```bash
+   cd my-express-server
+   yarn install
+   # or explicitly:
+   yarn add express
+   yarn add --dev nodemon
+   ```
 
-      - nodemon not found in container: compose is configured to preserve container `node_modules`. If you bind-mount the project root and hide the container `node_modules`, install nodemon locally (`yarn add --dev nodemon`) or install it globally in the Docker image.
-      - Python container exits immediately: the image runs `uvicorn src.main:app` — ensure `src/main.py` defines `app` (FastAPI) and does not exit early. Use `docker compose logs python-server --follow` to inspect.
+   ## Start the Node server (development)
 
-      Migration notes
+   1. Install dependencies
 
-      - The Node server mirrors the Python endpoints and task list to allow side-by-side comparison while migrating.
-      - Both servers use in-memory storage for tasks; migrate to a shared persistent store for production parity.
+   ```bash
+   cd my-express-server
+   yarn install
+   ```
 
-      If you'd like, I can:
+   2. Start in development mode (nodemon will reload on changes)
 
-      - Add a `/healthz` endpoint to both services
-      - Add automated parity tests that call both services and compare responses
-      - Convert the Node server to TypeScript
+   ```bash
+   # default PORT is 8001
+   yarn start
 
+   # or explicitly set PORT
+   PORT=8001 yarn start
+   ```
+
+   Notes on `yarn start`:
+
+   - `yarn start` runs the script defined in `package.json` which uses nodemon to execute `src/index.js` and watch the `src` directory.
+   - If you are running the server inside Docker and you bind-mount the project directory, preserve the container's `node_modules` or install nodemon locally to avoid `nodemon: not found` errors.
+
+   ### Environment variables and configuration (Node)
+
+   - `PORT` — port the Node server listens on. Defaults to `8001` if not provided.
+   - No other configuration variables are required for the simple demo. If you add new environment variables, restart the server to pick them up in development.
+
+   Example (running on a different port):
+
+   ```bash
+   PORT=3000 yarn start
+   ```
+
+   ## Endpoints (shared contract)
+
+   - GET / -> returns `Hello World` (plain text)
+   - GET /tasks -> returns JSON: `{ "tasks": [ ... ] }`
+   - POST /tasks -> accepts JSON `{ "text": "..." }` and returns `{ "message": "Task added successfully" }`
+
+   ## Run both servers with Docker Compose (recommended)
+
+   The repository root contains a `docker-compose.yml` that builds and runs both services together:
+
+   ```bash
+   # from repository root
+
+   ```
+
+   This will:
+
+   - Build images for both services
+   - Run the Python service on host port 8000
+   - Run the Node service on host port 8001
+
+   Stop and remove containers:
+
+   ```bash
+   docker compose down
+   ```
+
+   ## Example requests (Node)
+
+   ```bash
+   # GET root
+   curl http://localhost:8001/
+
+   # GET tasks
+   curl http://localhost:8001/tasks
+
+   # POST a task
+   curl -X POST -H "Content-Type: application/json" -d '{"text":"New task"}' http://localhost:8001/tasks
+   ```
+
+   Replace `8001` with `8000` to target the Python server.
+
+   ## Troubleshooting
+
+   - `nodemon` not found in container: make sure `nodemon` is installed and that you are not hiding the container `node_modules` by a host mount. The recommended compose configuration preserves the container `node_modules` to avoid this issue.
+   - Port conflicts: ensure nothing else is bound to 8000/8001 on the host.
+   - If the Python container exits immediately, check that `python-server/src/main.py` defines a FastAPI `app` and that Dockerfile runs `uvicorn src.main:app`.
+
+   ## Migration notes
+
+   - The Node server mirrors the Python API and in-memory task list so you can compare responses while migrating functionality.
+   - Both servers use an in-memory tasks array; for production migration, move to a shared persistent store (database) and add tests.
+
+   If you'd like, I can update this README to add:
+
+   - a `/healthz` endpoint example
+   - a small parity test script that calls both servers and compares responses
+   - instructions for running tests in CI
+
+   Generated on 2025-10-16
       Generated on 2025-10-16

@@ -1,7 +1,7 @@
 const express = require('express');
 
 const app = express();
-const PORT = 8001;
+const PORT = process.env.PORT || 8001;
 
 // parse JSON bodies
 app.use(express.json());
@@ -37,5 +37,5 @@ app.post('/tasks', (req, res) => {
 });
 
 app.listen(PORT, () => {
-        console.log(`Server is running on http://localhost:${PORT}`);
+    console.log(`Server is running on http://0.0.0.0:${PORT}`);
 });
