@@ -31,84 +31,127 @@ To get started with this project, follow the instructions below.
    Running with Docker
    - Map the ports when running containers:
       ```
-      docker run -p 8000:8000 my-express-server
-      docker run -p 8001:8001 my-express-server
+      # Anythink Market — Servers (Python & Node)
+
+      This folder contains the Node/Express server of the Anythink Market demo. The repository also includes the original Python server. Both servers expose the same simple API so you can run them side-by-side while migrating functionality from Python to Node.
+
+      Summary
+
+      - Python server: FastAPI + Uvicorn, listens on port 8000
+      - Node server: Express + Nodemon (development), listens on port 8001
+
+      Both servers implement the following contract:
+
+      - GET / -> "Hello World"
+      - GET /tasks -> { "tasks": [ ... ] }
+      - POST /tasks -> accepts { "text": "..." } and returns { "message": "Task added successfully" }
+
+      Quick tips
+
+      - Node development uses `yarn start` (nodemon) so code changes reload automatically.
+      - The `docker-compose.yml` at the repository root runs both services together and maps Python -> 8000, Node -> 8001.
+
+      Requirements
+
+      - Node.js (LTS recommended; repository used Node 14)
+      - Yarn (for Node scripts)
+      - Python 3.9+ (if running the original Python server locally)
+      - Docker & Docker Compose (recommended for parity and reproducible environment)
+
+      Run locally — Node
+
+      1. Install dependencies
+
+      ```bash
+      cd my-express-server
+      yarn install
       ```
-   - Adjust image names/tags or use separate container names if running both simultaneously.
 
-3. Configure environment variables:
-   - Copy the example env file if present:
-     ```
-     cp .env.example .env
-     ```
-   - Ensure the server port is set (default used in this project is 8001):
-     ```
-     PORT=8001
-     ```
+      2. Start the Node server (development — nodemon watches `src`)
 
-4. Start the development server (Nodemon is configured for automatic reload):
-   ```
-   yarn start
-   ```
-   The server will be available at: http://localhost:8001
+      ```bash
+      yarn start
+      ```
 
-5. Run with Docker (optional):
-   - Build the image:
-     ```
-     docker build -t my-express-server .
-     ```
-   - Run the container:
-     ```
-     docker run -p 8001:8001 my-express-server
-     ```
+      Visit: http://localhost:8001
 
-Notes:
-- Use yarn for all scripts shown above. Adjust commands to npm if you prefer.
-- If you add new environment variables, restart the dev server to pick up changes.
-- For troubleshooting, check the server logs printed to the terminal.
+      Run locally — Python (optional)
 
-### Prerequisites
+      1. Create and activate a virtual environment
 
-Make sure you have [Node.js](https://nodejs.org/) and [Yarn](https://yarnpkg.com/) installed on your machine.
+      ```bash
+      cd python-server
+      python3 -m venv .venv
+      source .venv/bin/activate
+      ```
 
-### Installation
+      2. Install dependencies and run uvicorn
 
-1. Clone the repository:
-   ```
-   git clone <repository-url>
-   cd my-express-server
-   ```
+      ```bash
+      pip install -r requirements.txt
+      uvicorn src.main:app --reload --host 0.0.0.0 --port 8000
+      ```
 
-2. Install the dependencies:
-   ```
-   yarn install
-   ```
+      Visit: http://localhost:8000
 
-### Running the Server
+      Run with Docker Compose (recommended)
 
-To start the server with automatic reloading, run:
-```
-yarn start
-```
+      From the repository root:
 
-The server will be running at `http://localhost:8001`.
+      ```bash
+      docker compose up --build
+      ```
 
-### Building the Docker Image
+      This builds both images and launches two containers:
 
-To build the Docker image, run:
-```
-docker build -t my-express-server .
-```
+      - Python -> http://localhost:8000
+      - Node -> http://localhost:8001
 
-### Running the Docker Container
+      Stop and remove containers:
 
-To run the Docker container, use the following command:
-```
-docker run -p 8001:8001 my-express-server
-```
+      ```bash
+      docker compose down
+      ```
 
-The server will be accessible at `http://localhost:8001` from your host machine.
+      Endpoints and examples
 
-### License
+      - GET root (Node):
 
-This project is licensed under the MIT License.
+      ```bash
+      curl http://localhost:8001/
+      # => Hello World
+      ```
+
+      - GET tasks:
+
+      ```bash
+      curl http://localhost:8001/tasks
+      # => { "tasks": [ ... ] }
+      ```
+
+      - POST a task:
+
+      ```bash
+      curl -X POST -H "Content-Type: application/json" -d '{"text":"New task"}' http://localhost:8001/tasks
+      # => { "message": "Task added successfully" }
+      ```
+
+      Use port `8000` in the examples above to target the Python server instead.
+
+      Troubleshooting
+
+      - nodemon not found in container: compose is configured to preserve container `node_modules`. If you bind-mount the project root and hide the container `node_modules`, install nodemon locally (`yarn add --dev nodemon`) or install it globally in the Docker image.
+      - Python container exits immediately: the image runs `uvicorn src.main:app` — ensure `src/main.py` defines `app` (FastAPI) and does not exit early. Use `docker compose logs python-server --follow` to inspect.
+
+      Migration notes
+
+      - The Node server mirrors the Python endpoints and task list to allow side-by-side comparison while migrating.
+      - Both servers use in-memory storage for tasks; migrate to a shared persistent store for production parity.
+
+      If you'd like, I can:
+
+      - Add a `/healthz` endpoint to both services
+      - Add automated parity tests that call both services and compare responses
+      - Convert the Node server to TypeScript
+
+      Generated on 2025-10-16
