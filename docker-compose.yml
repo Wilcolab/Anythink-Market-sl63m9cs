@@ -1,9 +1,38 @@
+version: "3.8"
+
 services:
   python-server:
     build:
       context: ./python-server
       dockerfile: Dockerfile
     ports:
-      - 8000:8000
+      - "8000:8000"
     volumes:
-      - ./python-server/src:/app/src
+      - ./python-server:/app:cached
+    # Let the image CMD (uvicorn) run; add healthcheck to wait for readiness
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/ || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
+  node-server:
+    build:
+      context: ./my-express-server
+      dockerfile: Dockerfile
+    command: ["sh", "-c", "yarn start"]
+    ports:
+      - "8001:8001"
+    volumes:
+      - ./my-express-server:/usr/src/app:cached
+      # preserve container-installed node_modules so nodemon (installed during image build) isn't hidden
+      - /usr/src/app/node_modules
+    depends_on:
+      - python-server
+    restart: unless-stopped
+
+volumes:
+  # anonymous host volume entry is fine; no data required here
+  # (keep file if you want named volume behavior)
+  node_modules: {}
