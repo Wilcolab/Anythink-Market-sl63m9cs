@@ -15,7 +15,26 @@ To get started with this project, follow the instructions below.
 2. Install dependencies:
    ```
    yarn install
-   ```
+   Note about the Python server migration
+   - The original Python server has been migrated to Node.js. The repository now provides two working servers:
+      - Port 8000 — the migrated Python server (now running on Node.js)
+      - Port 8001 — the Express server
+
+   Running the servers locally
+   - To run either server, set the PORT environment variable before starting:
+      ```
+      PORT=8000 yarn start   # migrated Python server (now Node)
+      PORT=8001 yarn start   # Express server
+      ```
+   - To run both at the same time, start each instance in a separate terminal with the appropriate PORT value.
+
+   Running with Docker
+   - Map the ports when running containers:
+      ```
+      docker run -p 8000:8000 my-express-server
+      docker run -p 8001:8001 my-express-server
+      ```
+   - Adjust image names/tags or use separate container names if running both simultaneously.
 
 3. Configure environment variables:
    - Copy the example env file if present:
