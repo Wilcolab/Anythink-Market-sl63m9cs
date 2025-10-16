@@ -1,39 +1,121 @@
-# Python Server
+# Anythink Market — Servers
 
-This project contains a FastAPI server implemented in Python. It provides two routes for managing a task list.
+This repository contains two small demo servers used for migration and parity testing:
 
-## Project Structure
+- Python server: FastAPI + Uvicorn, listens on port 8000
+- Node server: Express + Nodemon (development), listens on port 8001
 
-The project has the following files and directories:
+Both servers implement a minimal tasks API so you can run them side-by-side while migrating functionality.
 
-- `python-server/src/main.py`: This file contains the implementation of the FastAPI server with two routes. It handles adding a task to a list and retrieving the list.
+## Project structure
 
-- `python-server/src/__init__.py`: This file is an empty file that marks the `src` directory as a Python package.
+- `python-server/` — original FastAPI implementation
+  - `src/main.py` — FastAPI app (defines `app` and routes)
+  - `requirements.txt` — Python dependencies
+  - `Dockerfile` — builds an image and runs uvicorn
 
-- `python-server/requirements.txt`: This file lists the dependencies required for the FastAPI server and other dependencies.
+- `my-express-server/` — Node/Express migration target
+  - `src/index.js` — Express app (mirrors the Python endpoints)
+  - `package.json` — Node dependencies and start script
+  - `nodemon.json` — nodemon configuration for development
 
-- `python-server/Dockerfile`: This file is used to build a Docker image for the FastAPI server. It specifies the base image, copies the source code into the image, installs the dependencies, and sets the command to run the server.
+- `docker-compose.yml` — builds and runs both services for local development
 
-- `docker-compose.yml`: This file is used to define and run multi-container Docker applications. It specifies the services to run, their configurations, and any dependencies between them.
+## Getting started (recommended: Docker Compose)
 
-## Getting Started
+From the repository root run:
 
-To run the FastAPI server using Docker, follow these steps:
+```bash
+docker compose up --build
+```
 
-- Build and start the Docker containers by running the following command:
+This builds both images and starts two containers with these host ports:
 
-  ```shell
-  docker compose up
-  ```
+- Python service -> http://localhost:8000
+- Node service -> http://localhost:8001
 
-  This command will build the Docker image for the FastAPI server and start the containers defined in the `docker-compose.yml` file.
+Stop the running containers:
 
-- The FastAPI server should now be running. You can access at port `8000`.
+```bash
+docker compose down
+```
 
-## API Routes
+## Running locally (developer)
 
-The FastAPI server provides the following API routes:
+Node (my-express-server)
 
-- `POST /tasks`: Adds a task to the task list. The request body should contain the task details.
+1. Install dependencies
 
-- `GET /tasks`: Retrieves the task list.
+```bash
+cd my-express-server
+yarn install
+```
+
+2. Start the server (development - uses nodemon)
+
+```bash
+# default port 8001
+yarn start
+
+# or set PORT explicitly
+PORT=8001 yarn start
+```
+
+Python (python-server)
+
+1. (Optional) Create a virtual environment and install dependencies
+
+```bash
+cd python-server
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
+
+2. Run locally with uvicorn (the Dockerfile already runs this):
+
+```bash
+uvicorn src.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+## API (shared contract)
+
+- GET / -> `Hello World` (plain text)
+- GET /tasks -> `{ "tasks": [ ... ] }`
+- POST /tasks -> accepts `{ "text": "..." }` and returns `{ "message": "Task added successfully" }`
+
+Examples (Node)
+
+```bash
+curl http://localhost:8001/
+curl http://localhost:8001/tasks
+curl -X POST -H "Content-Type: application/json" -d '{"text":"New task"}' http://localhost:8001/tasks
+```
+
+Replace `8001` with `8000` to target the Python server.
+
+## Requirements
+
+- Docker & Docker Compose
+- Node.js (LTS) + Yarn (for local Node development)
+- Python 3.9+ + pip (for local Python development)
+
+## Troubleshooting
+
+- `nodemon: not found` inside Node container — ensure nodemon is in `devDependencies` and that the compose file preserves the image `node_modules` (the repo's compose config already does this). Alternatively install nodemon globally in the Dockerfile.
+- Python container exits immediately — check that `python-server/src/main.py` defines `app` and that the Dockerfile runs `uvicorn src.main:app`.
+- Port conflicts — ensure nothing else is listening on 8000/8001.
+
+## Migration notes
+
+Both servers keep tasks in memory for the demo. For production parity migrate to a shared persistent store and add tests.
+
+---
+
+If you'd like I can:
+
+- Add a `/healthz` endpoint to both services
+- Add a small parity test that calls both servers and compares responses
+- Update CI checks or linting to ensure the README format passes repository requirements
+
+Generated on 2025-10-16
